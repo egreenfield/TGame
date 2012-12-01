@@ -1,5 +1,7 @@
+(function(window) {
 
-    var KEYCODE_ENTER = 13;     //usefull keycode
+
+var KEYCODE_ENTER = 13;     //usefull keycode
     var KEYCODE_SPACE = 32;     //usefull keycode
     var KEYCODE_UP = 38;        //usefull keycode
     var KEYCODE_LEFT = 37;      //usefull keycode
@@ -8,27 +10,6 @@
     var KEYCODE_A = 65;         //usefull keycode
     var KEYCODE_D = 68;         //usefull keycode
 
-
-
-    var forwardHeld;
-    var backHeld;
-    var jumpHeld;
-    var playerHeight;
-    var playerPosition; 
-    var preload;
-
-    var canvas;         //Main canvas
-    var stage;          //Main display stage
-
-    var playerVerticalVelocity = 0;
-    var playerHorizontalVelocity = 0;
-
-
-
-    var messageField;       //Message display field
-    var scoreField;         //score Field
-
-    var loadingInterval = 0;
 
     var BLOCKSIZE = 70;
     var LATERAL_VELOCITY = .1;
@@ -41,102 +22,77 @@
 
     var STATE_PLAYING = 0;
     var STATE_DYING = 1;
-    var state = STATE_PLAYING;
+
+    var gameInstance = null;
 
 
-    //register key functions
-    document.onkeydown = handleKeyDown;
-    document.onkeyup = handleKeyUp;
+//
+
+function Game(stage) {
+
+  this.initialize(stage);
+
+}
 
 
-    function init() {
-        if (window.top != window) {
-            document.getElementById("header").style.display = "none";
-        }
+// static methods
 
-        if (!SoundJS.checkPlugin(true)) {
-//            document.getElementById("error").style.display = "block";
-//            document.getElementById("content").style.display = "none";
-            return;
-        }
+//Inheritance
+// Game.prototype = new Container();
+var p = Game.prototype // = new Container();
 
-        // begin loading content (only sounds to load)
-        var manifest = [
+
+
+
+// public properties:
+
+    p.blockheight;
+    p.blockWidth;
+
+    p.forwardHeld;
+    p.backHeld;
+    p.jumpHeld;
+    p.playerHeight;
+    p.playerPosition; 
+    p.preload;
+
+    p.canvas;         //Main canvas
+    p.stage;          //Main display stage
+
+    p.playerVerticalVelocity = 0;
+    p.playerHorizontalVelocity = 0;
+
+
+
+    p.loadingInterval = 0;
+    p.stage;
+    p.state = STATE_PLAYING;
+    p.offset = 0;
+
+    p.manifest = [
             {id:"music", src:"assets/music.mp3"}
             ,{id:"bounce", src:"assets/bounce.mp3"}
             ,{id:"pew", src:"assets/pew.mp3"}
             ,{id:"death", src:"assets/death.mp3"}
-            /*,{id:"break", src:"assets/Game-Break.mp3|../../assets/Game-Break.ogg", data:6},
-            {id:"death", src:"assets/Game-Death.mp3|../../assets/Game-Death.ogg"},
-            {id:"laser", src:"assets/Game-Shot.mp3|../../assets/Game-Shot.ogg", data:6},
-            {id:"music", src:"assets/18-machinae_supremacy-lord_krutors_dominion.mp3|../../assets/18-machinae_supremacy-lord_krutors_dominion.ogg"}
-            */
         ];
 
+// constructor:
 
-        canvas = document.getElementById("gameCanvas");
-        stage = new Stage(canvas);
-        messageField = new Text("Loading", "bold 24px Arial", "#000000");
-        messageField.maxWidth = 1000;
-        messageField.textAlign = "center";
-        messageField.x = canvas.width / 2;
-        messageField.y = canvas.height / 2;
-        stage.addChild(messageField);
-        stage.update();     //update the stage to show text
 
-        loadingInterval = setInterval(updateLoading, 200);
+    p.initialize = function(stage) {
+//register key functions
+        gameInstance = this;
+        this.stage = stage;
+        document.onkeydown = handleKeyDown;
+        document.onkeyup = handleKeyUp;
 
-        preload = new PreloadJS();
-        preload.onComplete = doneLoading;
-        preload.installPlugin(SoundJS);
-        preload.loadManifest(manifest);
     }
 
-    function stop() {
-        if (preload != null) { preload.close(); }
-        SoundJS.stop();
+    p.start = function() {
+        this.restart();
     }
 
-    function updateLoading() {
-        messageField.text = "Loading " + (preload.progress*100|0) + "%"
-        stage.update();
-    }
-
-
-    function doneLoading() {
-        clearInterval(loadingInterval);
-        scoreField = new Text("0", "bold 12px Arial", "#000000");
-        scoreField.textAlign = "right";
-        scoreField.x = canvas.width - 10;
-        scoreField.y = 22;
-        scoreField.maxWidth = 1000;
-        messageField.text = "Welcome:  Click to play";
-
-        // start the music
-        //SoundJS.play("music", SoundJS.INTERRUPT_NONE, 0, 0, -1, 0.1);
-
-        watchRestart();
-    }
-
-    function watchRestart() {
-        //watch for clicks
-        stage.addChild(messageField);
-        stage.update();     //update the stage to show text
-        canvas.onclick = handleClick;
-    }
-
-    function handleClick() {
-        //prevent extra clicks and hide text
-        canvas.onclick = null;
-        stage.removeChild(messageField);
-
-        // indicate the player is now on screen
-        SoundJS.play("begin");
-
-        restart();
-    }
-
-    function generateLevelData(levelData)
+    p.generateLevelData = function(levelData)
     {
         var currentHeight = 3;
         var holeCount = 0;
@@ -192,27 +148,26 @@
         }
     }
 
-    function initLevel()
+    p.initLevel = function()
     {
-        levelData = [];
-        level = new Shape();
+        this.levelData = [];
+        this.level = new Shape();
 
-        generateLevelData(levelData);
+        this.generateLevelData(this.levelData);
     }
 
-    function gameToGraphics(p)
+    p.gameToGraphics = function(p)
     {
-        p.x = (p.x-offset) * BLOCKSIZE ;
+        p.x = (p.x-this.offset) * BLOCKSIZE ;
         p.y = canvas.height - p.y*BLOCKSIZE;
     }
-    function graphicsToGame(p)
+    p.graphicsToGame = function(p)
     {
-        p.x = p.x/BLOCKSIZE + offset;
+        p.x = p.x/BLOCKSIZE + this.offset;
         p.y = (canvas.height-p.y)/BLOCKSIZE;
     }
 
-    var offset = 0;
-    function drawLevel(level)
+    p.drawLevel = function(level)
     {
         var g = level.graphics;
         g.clear();
@@ -224,26 +179,26 @@
         var c = 0;
 
 
-        var block= levelData[blockIndex];
+        var block= this.levelData[blockIndex];
         p[c].x = blockIndex;
         p[c].y = block.floor;
         top[c].x = blockIndex;
         top[c].y = block.ceil;
-        gameToGraphics(p[c]);
-        gameToGraphics(top[c]);
+        this.gameToGraphics(p[c]);
+        this.gameToGraphics(top[c]);
         c = 1-c;
 
 
         for(blockIndex=1;blockIndex < 1000;blockIndex++)
         {
-            var block = levelData[blockIndex];
+            var block = this.levelData[blockIndex];
             p[c].x = blockIndex;
             p[c].y = block.floor;
             top[c].x = blockIndex;
             top[c].y = block.ceil;
 
-            gameToGraphics(p[c]);
-            gameToGraphics(top[c]);
+            this.gameToGraphics(p[c]);
+            this.gameToGraphics(top[c]);
             g.moveTo(p[1-c].x,p[1-c].y);            
             g.lineTo(p[c].x,p[1-c].y);            
             g.lineTo(p[c].x,p[c].y);            
@@ -257,162 +212,157 @@
         }
     }
     //reset all game logic
-    function restart() {
+    p.restart = function() {
         //hide anything on stage and show the score
-        stage.removeAllChildren();
-        resetBadGuys();
-        initLevel();
-        drawLevel(level);
+        this.stage.removeAllChildren();
+        this.resetBadGuys();
+        this.initLevel();
+        this.drawLevel(this.level);
 
-        stage.addChild(level);
+        this.stage.addChild(this.level);
 
-        player = new Player(BLOCKSIZE);
-        stage.addChild(player);
-        stage.update();
+        this.player = new Player(BLOCKSIZE);
+        this.stage.addChild(this.player);
+        this.stage.update();
 
-        scoreField.text = (0).toString();
-        stage.addChild(scoreField);
-
-        playerPosition = new Point(0,levelData[0].floor);
-
+        this.playerPosition = new Point(0,this.levelData[0].floor);
         //reset key presses
-        forwardHeld = backHeld = jumpHeld = false;
-
-
-        state = STATE_PLAYING;
-
+        this.forwardHeld = this.backHeld = this.jumpHeld = false;
+        this.state = STATE_PLAYING;
         //start game timer
-        Ticker.addListener(window);
+        Ticker.addListener(this);
     }
-    function getPlayerLeftBlock(p)
+
+
+    p.getPlayerLeftBlock = function(p)
     {
-        return levelData[Math.floor(p)];
+        return this.levelData[Math.floor(p)];
     }
-    function getPlayerRightBlock(p)
+    p.getPlayerRightBlock = function(p)
     {
-        var newP = p + player.blockWidth;
+        var newP = p + this.player.blockWidth;
         if(Math.floor(newP) == newP)
         {
-            return levelData[Math.floor(newP)-1];
+            return this.levelData[Math.floor(newP)-1];
         }
         else
         {
-            return levelData[Math.floor(newP)];
+            return this.levelData[Math.floor(newP)];
 
         }
     }
-    function checkForHorizontalCollisions(v)
+    p.checkForHorizontalCollisions = function(v)
     {
-        var newPos = playerPosition.x + v;
-        var leftBlock = getPlayerLeftBlock(newPos);
-        var rightBlock = getPlayerRightBlock(newPos);
+        var newPos = this.playerPosition.x + v;
+        var leftBlock = this.getPlayerLeftBlock(newPos);
+        var rightBlock = this.getPlayerRightBlock(newPos);
         if(v > 0)
         {
-            if(rightBlock.floor > playerPosition.y || rightBlock.ceil < (playerPosition.y+player.blockHeight))
+            if(rightBlock.floor > this.playerPosition.y || rightBlock.ceil < (this.playerPosition.y+this.player.blockHeight))
             {
-                newPos = rightBlock.pos-player.blockWidth;
+                newPos = rightBlock.pos-this.player.blockWidth;
             }
         }
         else
         {
-            if(leftBlock.floor > playerPosition.y || leftBlock.ceil < (playerPosition.y+player.blockHeight))
+            if(leftBlock.floor > this.playerPosition.y || leftBlock.ceil < (this.playerPosition.y+this.player.blockHeight))
             {
-                newPos = leftBlock.pos+1;
+                newPos = this.leftBlock.pos+1;
             }
 
         }
         return newPos;
     }
-    function checkForVerticalCollisionsAgainstBlock(newPos,block)
+    p.checkForVerticalCollisionsAgainstBlock = function(newPos,block)
     {
         if(newPos < block.floor)
         {
             newPos = block.floor;
 //            console.log("resetting V to ",newPos);
         }
-        if(newPos + player.blockHeight > block.ceil)
+        if(newPos + this.player.blockHeight > block.ceil)
         {
-            newPos = block.ceil - player.blockHeight;
+            newPos = block.ceil - this.player.blockHeight;
         }
         return newPos;
     }
 
-    function checkForVerticalCollisions()
+    p.checkForVerticalCollisions = function()
     {
-        var proposedNewPos = playerPosition.y + playerVerticalVelocity;
-        var leftBlock = getPlayerLeftBlock(playerPosition.x);
-        var rightBlock = getPlayerRightBlock(playerPosition.x);
+        var proposedNewPos = this.playerPosition.y + this.playerVerticalVelocity;
+        var leftBlock = this.getPlayerLeftBlock(this.playerPosition.x);
+        var rightBlock = this.getPlayerRightBlock(this.playerPosition.x);
         var newPos = proposedNewPos;
-        newPos = checkForVerticalCollisionsAgainstBlock(newPos,leftBlock);
-        newPos = checkForVerticalCollisionsAgainstBlock(newPos,rightBlock);
+        newPos = this.checkForVerticalCollisionsAgainstBlock(newPos,leftBlock);
+        newPos = this.checkForVerticalCollisionsAgainstBlock(newPos,rightBlock);
         if(newPos != proposedNewPos)
         {
-            playerVerticalVelocity = 0;
+            this.playerVerticalVelocity = 0;
         }
         return newPos;
     }
 
-    function updatePlayerPosition() {
+    p.updatePlayerPosition = function() {
 
-        if(forwardHeld) {
-            playerHorizontalVelocity = Math.min(playerHorizontalVelocity + LATERAL_VELOCITY,MAX_LATERAL_VELOCITY);
+        if(this.forwardHeld) {
+            this.playerHorizontalVelocity = Math.min(this.playerHorizontalVelocity + LATERAL_VELOCITY,MAX_LATERAL_VELOCITY);
         }
-        else if (backHeld) {
-            playerHorizontalVelocity = Math.max(playerHorizontalVelocity - LATERAL_VELOCITY,-MAX_LATERAL_VELOCITY);
+        else if (this.backHeld) {
+            this.playerHorizontalVelocity = Math.max(this.playerHorizontalVelocity - LATERAL_VELOCITY,-MAX_LATERAL_VELOCITY);
         }
         else {
-            playerHorizontalVelocity = playerHorizontalVelocity * FRICTION;
+            this.playerHorizontalVelocity = this.playerHorizontalVelocity * FRICTION;
         }
-        playerPosition.x = checkForHorizontalCollisions(playerHorizontalVelocity);
+        this.playerPosition.x = this.checkForHorizontalCollisions(this.playerHorizontalVelocity);
 
 
-        playerVerticalVelocity += GRAVITY;
-        playerPosition.y = checkForVerticalCollisions();
+        this.playerVerticalVelocity += GRAVITY;
+        this.playerPosition.y = this.checkForVerticalCollisions();
 //        playerPosition.y += playerVerticalVelocity;
 
 //        checkForPlayerCollisions();
-        offset = playerPosition.x - 2;
+        this.offset = this.playerPosition.x - 2;
     }
-    function drawPlayer() {
-        var playerGPos = new Point(playerPosition.x,playerPosition.y);
-        gameToGraphics(playerGPos); 
-        player.x = playerGPos.x;
-        player.y = playerGPos.y;
+    p.drawPlayer = function() {
+        var playerGPos = new Point(this.playerPosition.x,this.playerPosition.y);
+        this.gameToGraphics(playerGPos); 
+        this.player.x = playerGPos.x;
+        this.player.y = playerGPos.y;
     }
 
-    function checkForJump() {
-        if(jumpHeld == false)
+    p.checkForJump = function() {
+        if(this.jumpHeld == false)
             return;
     
-        if(playerVerticalVelocity > 0)
+        if(this.playerVerticalVelocity > 0)
             return;
 
-        var leftBlock = getPlayerLeftBlock(playerPosition.x);
-        var rightBlock = getPlayerRightBlock(playerPosition.x);
-        if (playerPosition.y == leftBlock.floor || playerPosition.y == rightBlock.floor)
+        var leftBlock = this.getPlayerLeftBlock(this.playerPosition.x);
+        var rightBlock = this.getPlayerRightBlock(this.playerPosition.x);
+        if (this.playerPosition.y == leftBlock.floor || this.playerPosition.y == rightBlock.floor)
         {
-            playerVerticalVelocity = JUMP_VELOCITY;
+            this.playerVerticalVelocity = JUMP_VELOCITY;
             SoundJS.play("bounce", SoundJS.INTERRUPT_NONE, 0, 0, 0, 1);
         }
     }
 
-    function resetBadGuys()
+    p.resetBadGuys = function()
     {
         badGuyInstances = [];
         badGuyCount = 0;    
     }
 
     
-    function drawBadGuys() {
-        var firstBlockIndex = Math.floor(offset);
+    p.drawBadGuys = function() {
+        var firstBlockIndex = Math.floor(this.offset);
         var bottomRight = new Point(canvas.width,canvas.height);
-        graphicsToGame(bottomRight);
+        this.graphicsToGame(bottomRight);
 //        var lastBlockindex = Math.floor
         var lastBadGuyCount = badGuyCount;
         badGuyCount = 0;
         for(blockIndex=firstBlockIndex;blockIndex < bottomRight.x;blockIndex++)
         {
-            var block = levelData[blockIndex];
+            var block = this.levelData[blockIndex];
 
             if(block == null)
                 continue;
@@ -429,7 +379,7 @@
 
             badGuyInstance.assign(block.badGuy);
             var badGuyP = new Point(blockIndex,block.floor);
-            gameToGraphics(badGuyP);
+            this.gameToGraphics(badGuyP);
             badGuyInstance.x = badGuyP.x;
             badGuyInstance.y = badGuyP.y;
             badGuyInstance.tick(currentTime);         
@@ -441,9 +391,9 @@
         }
     }
 
-    function die()
+    p.die = function()
     {
-        state = STATE_DYING;        
+        this.state = STATE_DYING;        
         var deathSound = SoundJS.play("death", SoundJS.INTERRUPT_NONE, 0, 0, 0, 1);
         var that = this;
         deathSound.onComplete = function() {
@@ -451,17 +401,17 @@
         }
 
     }
-    function checkForDeath()
+    p.checkForDeath = function()
     {
         var dead = false;
-        if(playerPosition.y < -6)
+        if(this.playerPosition.y < -6)
         {
             dead = true;
         }
         if(!dead)
         {
-            var leftBlock = getPlayerLeftBlock(playerPosition.x);
-            var rightBlock = getPlayerRightBlock(playerPosition.x);
+            var leftBlock = this.getPlayerLeftBlock(this.playerPosition.x);
+            var rightBlock = this.getPlayerRightBlock(this.playerPosition.x);
 
             if((leftBlock.badGuy && leftBlock.badGuy.active) ||
                 (rightBlock.badGuy && rightBlock.badGuy.active)
@@ -471,58 +421,66 @@
             }
         }
         if (dead)
-            die();            
+            this.die();            
 
     }
 
 
-    function tick() {
+    p.tick = function() {
         currentTime = (new Date()).getTime();
-        if(state == STATE_PLAYING)
+        if(this.state == STATE_PLAYING)
         {
-            checkForJump();
-            updatePlayerPosition();
-            checkForDeath();
+            this.checkForJump();
+            this.updatePlayerPosition();
+            this.checkForDeath();
         }
-        drawPlayer();
-        drawLevel(level);
-        drawBadGuys();
+        this.drawPlayer();
+        this.drawLevel(this.level);
+        this.drawBadGuys();
 
         //call sub ticks
         stage.update();
     }
 
     //allow for WASD and arrow control scheme
-    function handleKeyDown(e) {
+    p.handleKeyDown = function(e) {
         //cross browser issues exist
         if(!e){ var e = window.event; }
         switch(e.keyCode) {
-            case KEYCODE_SPACE: jumpHeld = true; return false;
+            case KEYCODE_SPACE: this.jumpHeld = true; return false;
             case KEYCODE_A:
-            case KEYCODE_LEFT:  backHeld = true; return false;
+            case KEYCODE_LEFT:  this.backHeld = true; return false;
             case KEYCODE_D:
-            case KEYCODE_RIGHT: forwardHeld = true; return false;
+            case KEYCODE_RIGHT: this.forwardHeld = true; return false;
 //            case KEYCODE_W:
 //            case KEYCODE_UP:    fwdHeld = true; return false;
 //            case KEYCODE_ENTER:  if(canvas.onclick == handleClick){ handleClick(); }return false;
         }
     }
 
-    function handleKeyUp(e) {
+    p.handleKeyUp = function(e) {
         //cross browser issues exist
         if(!e){ var e = window.event; }
         switch(e.keyCode) {
-            case KEYCODE_SPACE: jumpHeld = false; break;
+            case KEYCODE_SPACE: this.jumpHeld = false; break;
             case KEYCODE_A:
-            case KEYCODE_LEFT:  backHeld = false; break;
+            case KEYCODE_LEFT:  this.backHeld = false; break;
             case KEYCODE_D:
-            case KEYCODE_RIGHT: forwardHeld = false; break;
+            case KEYCODE_RIGHT: this.forwardHeld = false; break;
 //            case KEYCODE_W:
 //            case KEYCODE_UP:    fwdHeld = false; break;
         }
     }
 
-    function addScore(value) {
-        //trust the field will have a number and add the score
-        scoreField.text = (Number(scoreField.text) + Number(value)).toString();
+
+    handleKeyDown = function(e) {
+        gameInstance.handleKeyDown(e);
     }
+    handleKeyUp = function(e) {
+        gameInstance.handleKeyUp(e);
+    }
+
+
+window.Game = Game;
+
+}(window));

@@ -78,11 +78,15 @@ var p = DeathTrap.prototype = new Container();
 
     p.makeShape = function() {
 
-        //draw DeathTrap body
-        var blockHeight = this.config.block.ceil - this.config.block.floor;
-        var g = this.sprite.graphics;
 
+        //draw DeathTrap body
+        var g = this.sprite.graphics;
         g.clear();
+
+        if(this.config == null)
+            return;
+        
+        var blockHeight = this.config.block.ceil - this.config.block.floor;
 
         g.beginStroke("#FF0000");
         g.beginFill("#FF0000");

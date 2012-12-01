@@ -13,8 +13,8 @@ function DeathTrap(blockSize) {
 
 DeathTrap.generate = function(block)
 {
-    var onTime = 1000;
-    var offTime = 3000;
+    var onTime = 200;
+    var offTime = 1000;
     var period = onTime + offTime;
     return {
         onTime: onTime,
@@ -59,8 +59,13 @@ var p = DeathTrap.prototype = new Container();
     }
 
     p.assign = function(v) {
-        this.config = v;
-        this.makeShape();
+        if(v != this.config) {
+            this.config = v;
+            this.wasActive = true;
+            this.makeShape();
+            this.inUse = (v != null);
+            this.visible = this.inUse;
+        }
     }
 
     p.setBlockHeight = function(h) {
@@ -68,13 +73,6 @@ var p = DeathTrap.prototype = new Container();
         this.blockHeight = h;
         this.makeShape();
     }  
-
-    p.setInUse = function(inUse) {
-        if(inUse == this.inUse)
-            return;
-        this.inUse = inUse;
-        this.visible = inUse;
-    }
 
 // public methods:
 
@@ -94,7 +92,13 @@ var p = DeathTrap.prototype = new Container();
 
     
     p.tick = function(t) {
-
+        t = (t-this.config.startTime) % this.config.period;
+        this.config.active = (t < this.config.onTime);
+        this.visible = this.config.active; 
+        if(this.config.active && this.wasActive == false) {
+            SoundJS.play("pew", SoundJS.INTERRUPT_NONE, 0, 0, 0, 1);
+        }
+        this.wasActive = this.config.active;
     }
 
 

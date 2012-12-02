@@ -46,25 +46,14 @@ var p = Game.prototype // = new Container();
 
 // public properties:
 
-    p.blockheight;
-    p.blockWidth;
-
     p.forwardHeld;
     p.backHeld;
     p.jumpHeld;
-    p.playerHeight;
-    p.playerPosition; 
-    p.preload;
 
     p.canvas;         //Main canvas
     p.stage;          //Main display stage
 
-    p.playerVerticalVelocity = 0;
-    p.playerHorizontalVelocity = 0;
 
-
-
-    p.loadingInterval = 0;
     p.stage;
     p.state = STATE_PLAYING;
     p.offset = 0;
@@ -136,7 +125,7 @@ var p = Game.prototype // = new Container();
                 switch(badGuyType)
                 {
                     case 0:
-                        badGuy = DeathTrap.generate(block);
+                        badGuy = new Laser(block);
                 }
                 block.badGuy = badGuy;
             }
@@ -221,11 +210,11 @@ var p = Game.prototype // = new Container();
 
         this.stage.addChild(this.level);
 
-        this.player = new Player(BLOCKSIZE);
-        this.stage.addChild(this.player);
+        this.player = new Player();
+        this.playerV = new PlayerV(this.player,BLOCKSIZE);
+        this.stage.addChild(this.playerV);
         this.stage.update();
 
-        this.playerPosition = new Point(0,this.levelData[0].floor);
         //reset key presses
         this.forwardHeld = this.backHeld = this.jumpHeld = false;
         this.state = STATE_PLAYING;
@@ -253,21 +242,21 @@ var p = Game.prototype // = new Container();
     }
     p.checkForHorizontalCollisions = function(v)
     {
-        var newPos = this.playerPosition.x + v;
+        var newPos = this.player.position.x + v;
         var leftBlock = this.getPlayerLeftBlock(newPos);
         var rightBlock = this.getPlayerRightBlock(newPos);
         if(v > 0)
         {
-            if(rightBlock.floor > this.playerPosition.y || rightBlock.ceil < (this.playerPosition.y+this.player.blockHeight))
+            if(rightBlock.floor > this.player.position.y || rightBlock.ceil < (this.player.position.y+this.player.blockHeight))
             {
                 newPos = rightBlock.pos-this.player.blockWidth;
             }
         }
         else
         {
-            if(leftBlock.floor > this.playerPosition.y || leftBlock.ceil < (this.playerPosition.y+this.player.blockHeight))
+            if(leftBlock.floor > this.player.position.y || leftBlock.ceil < (this.player.position.y+this.player.blockHeight))
             {
-                newPos = this.leftBlock.pos+1;
+                newPos = leftBlock.pos+1;
             }
 
         }
@@ -289,15 +278,15 @@ var p = Game.prototype // = new Container();
 
     p.checkForVerticalCollisions = function()
     {
-        var proposedNewPos = this.playerPosition.y + this.playerVerticalVelocity;
-        var leftBlock = this.getPlayerLeftBlock(this.playerPosition.x);
-        var rightBlock = this.getPlayerRightBlock(this.playerPosition.x);
+        var proposedNewPos = this.player.position.y + this.player.velocity.y;
+        var leftBlock = this.getPlayerLeftBlock(this.player.position.x);
+        var rightBlock = this.getPlayerRightBlock(this.player.position.x);
         var newPos = proposedNewPos;
         newPos = this.checkForVerticalCollisionsAgainstBlock(newPos,leftBlock);
         newPos = this.checkForVerticalCollisionsAgainstBlock(newPos,rightBlock);
         if(newPos != proposedNewPos)
         {
-            this.playerVerticalVelocity = 0;
+            this.player.velocity.y = 0;
         }
         return newPos;
     }
@@ -305,43 +294,41 @@ var p = Game.prototype // = new Container();
     p.updatePlayerPosition = function() {
 
         if(this.forwardHeld) {
-            this.playerHorizontalVelocity = Math.min(this.playerHorizontalVelocity + LATERAL_VELOCITY,MAX_LATERAL_VELOCITY);
+            this.player.velocity.x = Math.min(this.player.velocity.x + LATERAL_VELOCITY,MAX_LATERAL_VELOCITY);
         }
         else if (this.backHeld) {
-            this.playerHorizontalVelocity = Math.max(this.playerHorizontalVelocity - LATERAL_VELOCITY,-MAX_LATERAL_VELOCITY);
+            this.player.velocity.x = Math.max(this.player.velocity.x - LATERAL_VELOCITY,-MAX_LATERAL_VELOCITY);
         }
         else {
-            this.playerHorizontalVelocity = this.playerHorizontalVelocity * FRICTION;
+            this.player.velocity.x = this.player.velocity.x * FRICTION;
         }
-        this.playerPosition.x = this.checkForHorizontalCollisions(this.playerHorizontalVelocity);
+        this.player.position.x = this.checkForHorizontalCollisions(this.player.velocity.x);
 
 
-        this.playerVerticalVelocity += GRAVITY;
-        this.playerPosition.y = this.checkForVerticalCollisions();
-//        playerPosition.y += playerVerticalVelocity;
+        this.player.velocity.y += GRAVITY;
+        this.player.position.y = this.checkForVerticalCollisions();
 
-//        checkForPlayerCollisions();
-        this.offset = this.playerPosition.x - 2;
+        this.offset = this.player.position.x - 2;
     }
     p.drawPlayer = function() {
-        var playerGPos = new Point(this.playerPosition.x,this.playerPosition.y);
+        var playerGPos = new Point(this.player.position.x,this.player.position.y);
         this.gameToGraphics(playerGPos); 
-        this.player.x = playerGPos.x;
-        this.player.y = playerGPos.y;
+        this.playerV.x = playerGPos.x;
+        this.playerV.y = playerGPos.y;
     }
 
     p.checkForJump = function() {
         if(this.jumpHeld == false)
             return;
     
-        if(this.playerVerticalVelocity > 0)
+        if(this.player.velocity.y > 0)
             return;
 
-        var leftBlock = this.getPlayerLeftBlock(this.playerPosition.x);
-        var rightBlock = this.getPlayerRightBlock(this.playerPosition.x);
-        if (this.playerPosition.y == leftBlock.floor || this.playerPosition.y == rightBlock.floor)
+        var leftBlock = this.getPlayerLeftBlock(this.player.position.x);
+        var rightBlock = this.getPlayerRightBlock(this.player.position.x);
+        if (this.player.position.y == leftBlock.floor || this.player.position.y == rightBlock.floor)
         {
-            this.playerVerticalVelocity = JUMP_VELOCITY;
+            this.player.velocity.y = JUMP_VELOCITY;
             SoundJS.play("bounce", SoundJS.INTERRUPT_NONE, 0, 0, 0, 1);
         }
     }
@@ -371,7 +358,7 @@ var p = Game.prototype // = new Container();
             var badGuyInstance = badGuyInstances[badGuyCount];
             if(badGuyInstance == null)
             {
-                badGuyInstance = new DeathTrap(BLOCKSIZE);
+                badGuyInstance = new LaserV(BLOCKSIZE);
                 badGuyInstances[badGuyCount] = badGuyInstance;
                 stage.addChild(badGuyInstance);
             }
@@ -382,7 +369,8 @@ var p = Game.prototype // = new Container();
             this.gameToGraphics(badGuyP);
             badGuyInstance.x = badGuyP.x;
             badGuyInstance.y = badGuyP.y;
-            badGuyInstance.tick(currentTime);         
+            block.badGuy.tick(currentTime);         
+            badGuyInstance.update();
         }
 
         for(var i=badGuyCount;i<lastBadGuyCount;i++)
@@ -404,17 +392,17 @@ var p = Game.prototype // = new Container();
     p.checkForDeath = function()
     {
         var dead = false;
-        if(this.playerPosition.y < -6)
+        if(this.player.position.y < -6)
         {
             dead = true;
         }
         if(!dead)
         {
-            var leftBlock = this.getPlayerLeftBlock(this.playerPosition.x);
-            var rightBlock = this.getPlayerRightBlock(this.playerPosition.x);
+            var leftBlock = this.getPlayerLeftBlock(this.player.position.x);
+            var rightBlock = this.getPlayerRightBlock(this.player.position.x);
 
-            if((leftBlock.badGuy && leftBlock.badGuy.active) ||
-                (rightBlock.badGuy && rightBlock.badGuy.active)
+            if((leftBlock.badGuy && leftBlock.badGuy.canKill(this.player)) ||
+                (rightBlock.badGuy && rightBlock.badGuy.canKill(this.player))
                 )
             {
                 dead = true;
@@ -433,10 +421,10 @@ var p = Game.prototype // = new Container();
             this.checkForJump();
             this.updatePlayerPosition();
             this.checkForDeath();
+            this.drawPlayer();
+            this.drawLevel(this.level);
+            this.drawBadGuys();
         }
-        this.drawPlayer();
-        this.drawLevel(this.level);
-        this.drawBadGuys();
 
         //call sub ticks
         stage.update();

@@ -4,28 +4,14 @@
 
 //
 
-function DeathTrap(blockSize) {
+function LaserV(blockSize) {
 
   this.initialize(blockSize);
 
 }
 
 
-DeathTrap.generate = function(block)
-{
-    var onTime = 200;
-    var offTime = 1000;
-    var period = onTime + offTime;
-    return {
-        onTime: onTime,
-        offTime: offTime,
-        period: period,
-        startTime: Math.floor(Math.random()*period),
-        active: false,
-        block:block
-    };
-}
-var p = DeathTrap.prototype = new Container();
+var p = LaserV.prototype = new Container();
 
 
 
@@ -48,7 +34,7 @@ var p = DeathTrap.prototype = new Container();
 
 
         this.sprite = new Shape();
-        this.config = null;
+        this.laser = null;
         this.addChild(this.sprite);
 
         this.blockWidth = 1;
@@ -59,8 +45,8 @@ var p = DeathTrap.prototype = new Container();
     }
 
     p.assign = function(v) {
-        if(v != this.config) {
-            this.config = v;
+        if(v != this.laser) {
+            this.laser = v;
             this.wasActive = true;
             this.makeShape();
             this.inUse = (v != null);
@@ -79,14 +65,14 @@ var p = DeathTrap.prototype = new Container();
     p.makeShape = function() {
 
 
-        //draw DeathTrap body
+        //draw LaserV body
         var g = this.sprite.graphics;
         g.clear();
 
-        if(this.config == null)
+        if(this.laser == null)
             return;
-        
-        var blockHeight = this.config.block.ceil - this.config.block.floor;
+
+        var blockHeight = this.laser.block.ceil - this.laser.block.floor;
 
         g.beginStroke("#FF0000");
         g.beginFill("#FF0000");
@@ -95,18 +81,16 @@ var p = DeathTrap.prototype = new Container();
     }
 
     
-    p.tick = function(t) {
-        t = (t-this.config.startTime) % this.config.period;
-        this.config.active = (t < this.config.onTime);
-        this.visible = this.config.active; 
-        if(this.config.active && this.wasActive == false) {
+    p.update = function() {
+        this.visible = this.laser.active; 
+        if(this.laser.active && this.wasActive == false) {
             SoundJS.play("pew", SoundJS.INTERRUPT_NONE, 0, 0, 0, 1);
         }
-        this.wasActive = this.config.active;
+        this.wasActive = this.laser.active;
     }
 
 
 
-window.DeathTrap = DeathTrap;
+window.LaserV = LaserV;
 
 }(window));

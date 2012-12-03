@@ -1,7 +1,7 @@
 (function(window) {
 
 
-
+    var BEAMWIDTH = .05;
 //
 
 function Laser(block) {
@@ -34,11 +34,20 @@ GameObject.initType(Laser,LaserV);
         this.startTime =  Math.floor(Math.random()*period);
         this.active = false;
         this.block = block;
+        this.beamWidth = BEAMWIDTH;
 
     }
 
     p.canKill = function(player) {
-        return this.active;
+        if( this.active == false)
+            return false;
+        if(player.position.x > this.block.pos + .5 + this.beamWidth/2)
+            return false;
+        if(player.position.x + player.blockWidth < (this.block.pos + .5 - this.beamWidth/2))
+            return false;
+
+        return true;
+
     }
 
     p.tick = function(t) {

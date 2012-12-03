@@ -26,6 +26,11 @@ var KEYCODE_ENTER = 13;     //usefull keycode
     var gameInstance = null;
 
 
+    var badGuyMatrix = [
+        {type:Laser, p:.1},
+        {type:Spikes, p:.1},
+        {type: Shooter, p:.1}
+    ]
 //
 
 function Game(stage) {
@@ -34,7 +39,12 @@ function Game(stage) {
 
 }
 
+Game.blockSize= BLOCKSIZE;
 
+
+Game.instance = function() {
+    return gameInstance;
+}
 // static methods
 
 //Inheritance
@@ -81,6 +91,7 @@ var p = Game.prototype // = new Container();
         this.restart();
     }
 
+
     p.generateLevelData = function(levelData)
     {
         var currentHeight = 3;
@@ -89,6 +100,7 @@ var p = Game.prototype // = new Container();
         var maxHeight = 4;
         var minCorridorHeight = 4;
         var maxCorridorHeight = 7;
+
         for(var i=0;i<1000;i++)
         {
 //            console.log("current height:",currentHeight);
@@ -120,14 +132,7 @@ var p = Game.prototype // = new Container();
             var badGuyOK = (i > LEVEL_START_SAFE_ZONE && block.floor > 0);
             if(badGuyOK)
             {
-                var badGuy = null;
-                var badGuyType = Math.floor(Math.random() * 10);
-                switch(badGuyType)
-                {
-                    case 0:
-                        badGuy = new Laser(block);
-                }
-                block.badGuy = badGuy;
+                this.pickBadguyForBlock(block);
             }
 
             levelData.push(block);
@@ -135,6 +140,27 @@ var p = Game.prototype // = new Container();
 
 
         }
+    }
+
+    p.pickBadguyForBlock = function(block)
+    {
+        var badGuy = null;
+        var badGuyGenerator = Math.random();
+        var badGuyType = null;
+        var ceil = 0;
+        for(var i=0;i<badGuyMatrix.length;i++)
+        {
+            ceil += badGuyMatrix[i].p;
+            if(badGuyGenerator < ceil)
+            {
+                badGuyType = badGuyMatrix[i];
+                break;
+            }
+        }
+        if(badGuyType != null)
+            badGuy = new badGuyType.type(block);
+        block.badGuy = badGuy;        
+
     }
 
     p.initLevel = function()
@@ -149,6 +175,12 @@ var p = Game.prototype // = new Container();
     {
         p.x = (p.x-this.offset) * BLOCKSIZE ;
         p.y = canvas.height - p.y*BLOCKSIZE;
+    }
+
+    p.gameToGraphicsV = function(p)
+    {
+        p.x = (p.x) * BLOCKSIZE ;
+        p.y = - p.y*BLOCKSIZE;        
     }
     p.graphicsToGame = function(p)
     {
@@ -204,7 +236,6 @@ var p = Game.prototype // = new Container();
     p.restart = function() {
         //hide anything on stage and show the score
         this.stage.removeAllChildren();
-        this.resetBadGuys();
         this.initLevel();
         this.drawLevel(this.level);
 
@@ -333,20 +364,17 @@ var p = Game.prototype // = new Container();
         }
     }
 
-    p.resetBadGuys = function()
-    {
-        badGuyInstances = [];
-        badGuyCount = 0;    
-    }
-
     
     p.drawBadGuys = function() {
         var firstBlockIndex = Math.floor(this.offset);
         var bottomRight = new Point(canvas.width,canvas.height);
         this.graphicsToGame(bottomRight);
-//        var lastBlockindex = Math.floor
-        var lastBadGuyCount = badGuyCount;
-        badGuyCount = 0;
+
+
+        for(var i=0;i<badGuyMatrix.length;i++) {
+            badGuyMatrix[i].type.visualPool.releaseAll();
+        }
+
         for(blockIndex=firstBlockIndex;blockIndex < bottomRight.x;blockIndex++)
         {
             var block = this.levelData[blockIndex];
@@ -355,27 +383,14 @@ var p = Game.prototype // = new Container();
                 continue;
             if(block.badGuy == null)
                 continue;
-            var badGuyInstance = badGuyInstances[badGuyCount];
-            if(badGuyInstance == null)
-            {
-                badGuyInstance = new LaserV(BLOCKSIZE);
-                badGuyInstances[badGuyCount] = badGuyInstance;
-                stage.addChild(badGuyInstance);
-            }
-            badGuyCount++;
-
-            badGuyInstance.assign(block.badGuy);
+            var badGuyInstance = block.badGuy.visualPool.allocate(block.badGuy);
+            stage.addChild(badGuyInstance);
             var badGuyP = new Point(blockIndex,block.floor);
             this.gameToGraphics(badGuyP);
             badGuyInstance.x = badGuyP.x;
             badGuyInstance.y = badGuyP.y;
             block.badGuy.tick(currentTime);         
             badGuyInstance.update();
-        }
-
-        for(var i=badGuyCount;i<lastBadGuyCount;i++)
-        {
-            badGuyInstances[i].assign(null);
         }
     }
 

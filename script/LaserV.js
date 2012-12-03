@@ -4,14 +4,14 @@
 
 //
 
-function LaserV(blockSize) {
+function LaserV() {
 
-  this.initialize(blockSize);
+  this.initialize();
 
 }
 
 
-var p = LaserV.prototype = new Container();
+var p = LaserV.prototype = new GameVisual();
 
 
 
@@ -24,69 +24,51 @@ var p = LaserV.prototype = new Container();
 
 // constructor:
 
-    p.Container_initialize = p.initialize;  //unique to avoid overiding base class
 
     
 
-    p.initialize = function(blockSize) {
+    p.initialize = function() {
 
-        this.Container_initialize();
-
+        GameVisual.prototype.initialize.apply(this);
 
         this.sprite = new Shape();
-        this.laser = null;
         this.addChild(this.sprite);
-
-        this.blockWidth = 1;
-        this.blockSize = blockSize;
-        this.inUse = false;
-//        this.makeShape(blockSize);
 
     }
 
     p.assign = function(v) {
-        if(v != this.laser) {
-            this.laser = v;
-            this.wasActive = true;
-            this.makeShape();
-            this.inUse = (v != null);
-            this.visible = this.inUse;
+        if(v != this.object) {
+            this.wasActive = true;            
         }
+        GameVisual.prototype.assign.apply(this,arguments);
     }
-
-    p.setBlockHeight = function(h) {
-
-        this.blockHeight = h;
-        this.makeShape();
-    }  
 
 // public methods:
 
-    p.makeShape = function() {
+    p.renderFromObject = function() {
 
 
         //draw LaserV body
         var g = this.sprite.graphics;
         g.clear();
-
-        if(this.laser == null)
+        if(this.object == null)
             return;
 
-        var blockHeight = this.laser.block.ceil - this.laser.block.floor;
+        var blockHeight = this.object.block.ceil - this.object.block.floor;
 
         g.beginStroke("#FF0000");
         g.beginFill("#FF0000");
-        g.rect(0,0,this.blockWidth*this.blockSize,-blockHeight*this.blockSize);
+        g.rect(0,0,Game.blockSize,-blockHeight*Game.blockSize);
         g.endFill();
     }
 
     
     p.update = function() {
-        this.visible = this.laser.active; 
-        if(this.laser.active && this.wasActive == false) {
+        this.visible = this.object.active; 
+        if(this.object.active && this.wasActive == false) {
             SoundJS.play("pew", SoundJS.INTERRUPT_NONE, 0, 0, 0, 1);
         }
-        this.wasActive = this.laser.active;
+        this.wasActive = this.object.active;
     }
 
 

@@ -14,7 +14,7 @@ function Player() {
 
 //Inheritance
 // Game.prototype = new Container();
-var p = Player.prototype // = new Container();
+var p = Player.prototype  = new GameObject();
 
 
 
@@ -25,6 +25,7 @@ var p = Player.prototype // = new Container();
 
 
     p.initialize = function() {
+        GameObject.prototype.initialize.apply(this,[]);
         this.position = new Point(0,0);
         this.velocity = new Point(0,0);
         this.blockHeight = 2;

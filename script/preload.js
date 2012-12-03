@@ -54,7 +54,7 @@
         messageField.text = "Welcome:  Click to play";
 
         // start the music
-        //SoundJS.play("music", SoundJS.INTERRUPT_NONE, 0, 0, -1, 0.1);
+        SoundJS.play("music", SoundJS.INTERRUPT_NONE, 0, 0, -1, 0.1);
 
         watchRestart();
     }

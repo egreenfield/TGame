@@ -11,8 +11,9 @@ function Laser(block) {
 }
 
 
-var p = Laser.prototype;
+var p = Laser.prototype = new GameObject;
 
+GameObject.initType(Laser,LaserV);
 
 
 
@@ -21,9 +22,6 @@ var p = Laser.prototype;
 
 // constructor:
 
-    p.Container_initialize = p.initialize;  //unique to avoid overiding base class
-
-    
 
     p.initialize = function(block) {
 
